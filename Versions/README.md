@@ -1,4 +1,4 @@
-# mythOS - Documentation
+# mythOS - Versions
 As stated on the home page for this project, the plan is to have multiple different versions (found in the Versions folder) for different target audiences. The different versions of mythOS include:
 
 * Hydra
