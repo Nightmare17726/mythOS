@@ -1,5 +1,5 @@
 # mythOS - Documentation
-As stated on the home page for this project, the plan is to have multiple different versions (found in the Versions folder) for different target audiences. The different versions of mythOS include:
+As stated on the home page for this project, the plan is to have multiple different versions (found in the Versions folder) for different target audiences. It seems that the operating system requires a minimum of 2 GB of RAM and 2 CPU cores. The different versions of mythOS include:
 
 * Hydra
 * Nekomata
