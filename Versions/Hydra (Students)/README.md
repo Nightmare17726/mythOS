@@ -25,4 +25,5 @@ The Hydra version of mythOS is intended for Students of varying diciplines (name
 * Burpsuite
 * Samba
 * Blender
+* Thunderbird
 * 
