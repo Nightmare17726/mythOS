@@ -1,5 +1,5 @@
 # mythOS - Versions
-As stated on the home page for this project, the plan is to have multiple different versions (found in the Versions folder) for different target audiences. The different versions of mythOS include:
+As stated on the home page for this project, the plan is to have multiple different versions (found in the Versions folder) for different target audiences. If you download one of the VirtualBox virtual machines, the username should be: `mythOS vX.X` and the password is: `mythOS`. The different versions of mythOS include:
 
 * Hydra
 * Nekomata
