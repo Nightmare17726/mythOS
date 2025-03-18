@@ -3,4 +3,4 @@ mythOS is built upon other versions of Linux, stripped down and rebuilt to serve
 
 | mythOS Version | Base Linux Name | Base Linux File Name |
 | ---------------|-----------------|----------------------|
-|mythOS 1.0      |Linux Mint       |linuxmint-22-xfce-64bit.iso|
+|mythOS 1.0      |Gentoo Linux       |install-arm64-minimal-20250309T234826Z.iso|
