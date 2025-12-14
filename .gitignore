@@ -1,0 +1,326 @@
+# mythOS .gitignore
+# Ignore build artifacts, temporary files, and OS-specific files
+
+################################################################################
+# Build Artifacts
+################################################################################
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Shared objects
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Static libraries
+*.a
+*.lib
+
+# Archives
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.zip
+*.7z
+*.rar
+
+# ISO images
+*.iso
+*.img
+
+# Build directories
+buildroot/
+output/
+build/
+dist/
+downloads/
+
+# Buildroot specific
+.buildroot-*
+.stamp_*
+*.stamp
+.config.old
+
+# Compilation databases
+compile_commands.json
+
+################################################################################
+# Temporary Files
+################################################################################
+
+# Editor temporary files
+*~
+*.swp
+*.swo
+*.swn
+.*.swp
+.*.swo
+.*.swn
+*.bak
+*.tmp
+
+# Vi/Vim
+.*.swp
+.*.swo
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+Session.vim
+.netrwhist
+
+# Emacs
+\#*\#
+.\#*
+*_flymake.*
+*_flymake
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+################################################################################
+# OS-Specific Files
+################################################################################
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+################################################################################
+# Python
+################################################################################
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+################################################################################
+# mythOS Specific
+################################################################################
+
+# Build outputs
+output/
+*.iso
+*.img
+
+# Theme packages
+themes/*.tar.gz
+packages/*.tar.gz
+
+# Backup files
+.mythos-backups/
+*.backup
+
+# Configuration overrides (keep templates, ignore local configs)
+*.local
+*.override
+.env.local
+
+# Test outputs
+test-output/
+test-results/
+
+# Log files
+*.log
+build.log
+install.log
+
+# Downloaded Buildroot
+buildroot-*.tar.gz
+buildroot-*/
+
+# Cache directories
+.cache/
+cache/
+
+# AI Hub configuration (user-specific)
+.config/mythos/ai-hub-*.json
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+
+################################################################################
+# Documentation Build Artifacts
+################################################################################
+
+# Markdown processors
+*.html
+!Potential\ GUIs/*.html
+# Keep HTML files in Potential GUIs directory
+
+# PDF generation artifacts
+*.aux
+*.out
+*.toc
+*.pdf
+
+################################################################################
+# Development
+################################################################################
+
+# Debug symbols
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Profiling data
+*.gcno
+*.gcda
+*.gcov
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Patch files
+*.patch
+*.diff
+*.rej
+*.orig
+
+################################################################################
+# Git
+################################################################################
+
+# Git patches
+*.patch
+
+# Git conflict markers (these shouldn't be committed)
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+
+################################################################################
+# Misc
+################################################################################
+
+# Node modules (if any web tools are used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package manager directories
+.npm/
+.yarn/
+
+# Secrets and credentials
+.env
+.env.local
+.env.*.local
+secrets.txt
+credentials.json
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+
+# Local configuration
+local.conf
+custom.conf

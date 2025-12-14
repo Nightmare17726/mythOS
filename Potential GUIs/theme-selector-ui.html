@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mythOS Theme Selector - Interactive UI Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .system-info {
+            background: #f8f9fa;
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .storage-bar {
+            background: #e9ecef;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .storage-fill {
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .theme-card {
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-card.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .theme-card.incompatible {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .theme-card.incompatible:hover {
+            transform: none;
+        }
+
+        .theme-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .theme-icon {
+            font-size: 3em;
+            margin-right: 15px;
+        }
+
+        .theme-title {
+            flex: 1;
+        }
+
+        .theme-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .theme-subtitle {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .theme-size {
+            background: #e7f3ff;
+            color: #0066cc;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .theme-description {
+            color: #495057;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .theme-features {
+            margin: 15px 0;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 3px;
+            font-size: 0.85em;
+            color: #495057;
+        }
+
+        .theme-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-compatible {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-incompatible {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-current {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .mascot-preview {
+            width: 100%;
+            height: 150px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+
+        .action-buttons {
+            padding: 30px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .install-info {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        /* Color themes for each edition */
+        .theme-chase { border-color: #87CEEB; }
+        .theme-chase.selected { border-color: #4A90E2; box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); }
+
+        .theme-pegasus { border-color: #E6E6FA; }
+        .theme-pegasus.selected { border-color: #9370DB; box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.2); }
+
+        .theme-nekomata { border-color: #708090; }
+        .theme-nekomata.selected { border-color: #2F4F4F; box-shadow: 0 0 0 3px rgba(47, 79, 79, 0.2); }
+
+        .theme-hydra { border-color: #DDA0DD; }
+        .theme-hydra.selected { border-color: #8B008B; box-shadow: 0 0 0 3px rgba(139, 0, 139, 0.2); }
+
+        .theme-dragon { border-color: #FFB6C1; }
+        .theme-dragon.selected { border-color: #DC143C; box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.2); }
+
+        @media (max-width: 768px) {
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .system-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 mythOS Theme Selector</h1>
+            <p>Breathing New Life Into Old Hardware</p>
+        </div>
+
+        <div class="system-info">
+            <div class="info-item">
+                <div class="info-label">Available Storage</div>
+                <div class="info-value" id="storage-value">185 MB</div>
+                <div class="storage-bar">
+                    <div class="storage-fill" id="storage-fill" style="width: 72%">72% Free</div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Current Edition</div>
+                <div class="info-value" id="current-edition">Chase</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">System RAM</div>
+                <div class="info-value" id="ram-value">128 MB</div>
+            </div>
+        </div>
+
+        <div class="themes-grid" id="themes-grid">
+            <!-- Theme cards will be generated by JavaScript -->
+        </div>
+
+        <div class="action-buttons">
+            <div class="install-info" id="install-info">
+                Select an edition to continue
+            </div>
+            <div>
+                <button class="btn btn-secondary" onclick="cancelInstall()">Cancel</button>
+                <button class="btn btn-primary" id="install-btn" onclick="installTheme()" disabled>
+                    Install Selected Edition
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme definitions
+        const themes = [
+            {
+                id: 'chase',
+                name: 'Chase',
+                subtitle: 'Base Edition',
+                icon: '🐆',
+                size: 50,
+                description: 'The minimal foundation of mythOS. Perfect for users who want a clean, fast system with essential tools.',
+                features: ['Minimal footprint', 'Fast performance', 'Web browsing', 'File management'],
+                mascotQuote: "Let's see how fast we can make this run!",
+                color: 'chase'
+            },
+            {
+                id: 'pegasus',
+                name: 'Pegasus',
+                subtitle: 'Simplified Edition',
+                icon: '🦄',
+                size: 85,
+                description: 'Designed for elderly users and technology newcomers. Features large fonts, high contrast, and patient guidance.',
+                features: ['Elderly-friendly', 'High contrast', 'Interactive help', 'Large fonts'],
+                mascotQuote: "Take all the time you need - we'll go at your pace.",
+                color: 'pegasus'
+            },
+            {
+                id: 'nekomata',
+                name: 'Nekomata',
+                subtitle: 'Professional Edition',
+                icon: '🐱',
+                size: 120,
+                description: 'Built for productivity. Includes office suite, AI integration, and professional tools for daily work.',
+                features: ['Office suite', 'AI integration', 'ProtonVPN', 'Professional tools'],
+                mascotQuote: "Efficiency is elegance. Let's optimize your workflow!",
+                color: 'nekomata'
+            },
+            {
+                id: 'hydra',
+                name: 'Hydra',
+                subtitle: 'Education Edition',
+                icon: '🐉',
+                size: 150,
+                description: 'Multi-disciplinary toolkit for students. CS tools, music software, study aids, and AI assistants.',
+                features: ['Multi-disciplinary', 'AI assistants', 'Study tools', 'ProtonVPN'],
+                mascotQuote: "Every head is better than one! What shall we learn today?",
+                color: 'hydra'
+            },
+            {
+                id: 'dragon',
+                name: 'Dragon',
+                subtitle: 'Gaming Edition',
+                icon: '🐲',
+                size: 250,
+                description: 'Retro gaming paradise. Emulators, Steam, WINE, and a treasure trove of classic games.',
+                features: ['Retro emulators', 'Steam integration', 'WINE support', 'Game library'],
+                mascotQuote: "Time to raid the retro gaming vault!",
+                color: 'dragon'
+            }
+        ];
+
+        let selectedTheme = null;
+        const availableStorage = 185; // MB
+        const currentEdition = 'Chase';
+
+        function renderThemes() {
+            const grid = document.getElementById('themes-grid');
+            grid.innerHTML = '';
+
+            themes.forEach(theme => {
+                const isCompatible = availableStorage >= theme.size;
+                const isCurrent = theme.name === currentEdition;
+
+                const card = document.createElement('div');
+                card.className = `theme-card theme-${theme.color}`;
+                if (!isCompatible) card.classList.add('incompatible');
+                if (theme.id === selectedTheme) card.classList.add('selected');
+
+                card.innerHTML = `
+                    <div class="theme-header">
+                        <div class="theme-icon">${theme.icon}</div>
+                        <div class="theme-title">
+                            <div class="theme-name">${theme.name}</div>
+                            <div class="theme-subtitle">${theme.subtitle}</div>
+                        </div>
+                        <div class="theme-size">${theme.size} MB</div>
+                    </div>
+
+                    <div class="mascot-preview">${theme.icon}</div>
+
+                    <div class="theme-description">${theme.description}</div>
+
+                    <div class="theme-features">
+                        ${theme.features.map(f => `<span class="feature-tag">${f}</span>`).join('')}
+                    </div>
+
+                    <div style="font-style: italic; color: #6c757d; margin-top: 15px; font-size: 0.9em;">
+                        "${theme.mascotQuote}"
+                    </div>
+
+                    <div class="theme-status ${
+                        isCurrent ? 'status-current' :
+                        isCompatible ? 'status-compatible' :
+                        'status-incompatible'
+                    }">
+                        ${
+                            isCurrent ? '✓ Currently Installed' :
+                            isCompatible ? `✓ Compatible (${availableStorage - theme.size} MB will remain)` :
+                            `✗ Insufficient Storage (Need ${theme.size - availableStorage} MB more)`
+                        }
+                    </div>
+                `;
+
+                if (isCompatible && !isCurrent) {
+                    card.onclick = () => selectTheme(theme.id);
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        function selectTheme(themeId) {
+            selectedTheme = themeId;
+            const theme = themes.find(t => t.id === themeId);
+
+            document.getElementById('install-btn').disabled = false;
+            document.getElementById('install-info').innerHTML = `
+                Installing ${theme.name} Edition (${theme.size} MB)<br>
+                <small>Your data in /home will be preserved</small>
+            `;
+
+            renderThemes();
+        }
+
+        function installTheme() {
+            if (!selectedTheme) return;
+
+            const theme = themes.find(t => t.id === selectedTheme);
+
+            if (confirm(`Install ${theme.name} Edition?\n\nThis will replace your current ${currentEdition} Edition.\nYour personal files in /home will be preserved.\n\nSize: ${theme.size} MB\nRemaining storage: ${availableStorage - theme.size} MB`)) {
+                alert(`Installation simulation:\n\n✓ Backup created\n✓ Downloading ${theme.name} Edition\n✓ Verifying package integrity\n✓ Installing system files\n✓ Preserving user data\n✓ Installation complete!\n\nIn the real system, this would:\n1. Create a backup\n2. Download the theme from GitHub\n3. Install it to /system\n4. Preserve /home partition\n5. Update boot configuration\n6. Prompt for reboot`);
+            }
+        }
+
+        function cancelInstall() {
+            if (confirm('Exit theme selector?')) {
+                alert('In the real system, this would close the theme selector and return to the desktop.');
+            }
+        }
+
+        // Initialize
+        renderThemes();
+
+        // Simulate dynamic storage updates (for demo purposes)
+        setInterval(() => {
+            // In real system, this would poll actual storage
+            const variance = Math.floor(Math.random() * 5) - 2;
+            // Keep it around the same value for demo
+        }, 5000);
+    </script>
+</body>
+</html>
