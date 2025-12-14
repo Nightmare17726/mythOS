@@ -14,19 +14,46 @@ This guide will help you test mythOS on your computer using either:
 
 > **Note:** Pre-built ISOs will be available once the first release is published!
 
-1. Go to the mythOS Releases page:
-   ```
-   https://github.com/Nightmare17726/mythOS/releases
-   ```
+1. **Go to the mythOS Releases page:**
 
-2. Download the edition you want:
-   - `mythOS-Chase-1.0.0.iso` (50MB) - Smallest, fastest
-   - `mythOS-Pegasus-1.0.0.iso` (85MB) - Simplified interface
-   - `mythOS-Nekomata-1.0.0.iso` (120MB) - Professional tools
-   - `mythOS-Hydra-1.0.0.iso` (150MB) - Student edition
-   - `mythOS-Dragon-1.0.0.iso` (250MB) - Gaming edition
+   **[→ Download mythOS Releases](https://github.com/Nightmare17726/mythOS/releases)**
 
-3. Save the `.iso` file to your Downloads folder
+2. **Download the edition you want:**
+
+   **🐆 Chase Edition (Base) - 50MB**
+   - **[Download mythOS-Chase-1.0.0.iso](https://github.com/Nightmare17726/mythOS/releases/download/v1.0.0/mythOS-Chase-1.0.0.iso)**
+   - Smallest, fastest, minimal system
+   - Perfect for testing and basic use
+
+   **🦄 Pegasus Edition (Simplified) - 85MB**
+   - **[Download mythOS-Pegasus-1.0.0.iso](https://github.com/Nightmare17726/mythOS/releases/download/v1.0.0/mythOS-Pegasus-1.0.0.iso)**
+   - Elderly-friendly, large fonts, high contrast
+   - Patient guidance and accessibility
+
+   **🐱 Nekomata Edition (Professional) - 120MB**
+   - **[Download mythOS-Nekomata-1.0.0.iso](https://github.com/Nightmare17726/mythOS/releases/download/v1.0.0/mythOS-Nekomata-1.0.0.iso)**
+   - Office suite, AI integration, ProtonVPN
+   - Productivity-focused
+
+   **🐉 Hydra Edition (Education) - 150MB**
+   - **[Download mythOS-Hydra-1.0.0.iso](https://github.com/Nightmare17726/mythOS/releases/download/v1.0.0/mythOS-Hydra-1.0.0.iso)**
+   - Multi-disciplinary tools, AI assistants
+   - Built for students and educators
+
+   **🐲 Dragon Edition (Gaming) - 250MB**
+   - **[Download mythOS-Dragon-1.0.0.iso](https://github.com/Nightmare17726/mythOS/releases/download/v1.0.0/mythOS-Dragon-1.0.0.iso)**
+   - Retro gaming, emulators, Steam, WINE
+   - Gaming paradise
+
+   > 💡 **Tip:** Start with Chase Edition if you're new - it's the smallest and fastest!
+
+3. **Save the `.iso` file** to your Downloads folder
+
+4. **Verify your download** (optional but recommended):
+   - Download the `.sha256` file for your edition
+   - On macOS: `shasum -a 256 mythOS-Chase-1.0.0.iso`
+   - On Windows: `certutil -hashfile mythOS-Chase-1.0.0.iso SHA256`
+   - Compare with the `.sha256` file contents
 
 ### Option B: Build Your Own ISO (Advanced)
 

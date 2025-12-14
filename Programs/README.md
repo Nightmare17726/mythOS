@@ -12,7 +12,72 @@ This directory contains the core scripts and utilities for building, installing,
 
 ## 📜 Programs in This Directory
 
-### 1. build-chase-edition.sh
+### 1. mythos-first-boot-welcome.sh
+**Purpose:** First boot welcome dialog with intelligent edition switching
+
+**Description:**
+Interactive welcome script that runs on first boot of Chase Edition. Welcomes the user, explains the current edition, and offers the option to switch to a different edition with storage-aware compatibility checking. Greys out editions that won't fit on the device.
+
+**Usage:**
+```bash
+# Runs automatically on first boot
+# Or can be run manually:
+./mythos-first-boot-welcome.sh
+```
+
+**Features:**
+- ✓ Welcome message from Chase mascot
+- ✓ Option to stay with Chase or switch editions
+- ✓ **Storage-aware edition selection** (greys out incompatible editions)
+- ✓ Fetches edition sizes from GitHub releases
+- ✓ Integrates with theme-installer.sh for seamless switching
+- ✓ Preserves user data during edition switch
+- ✓ Dialog/whiptail UI or fallback to text menu
+- ✓ Only runs once (first boot flag)
+
+**Dialog Flow:**
+```
+First Boot → Welcome from Chase
+           ↓
+     Continue with Chase?
+           ↓
+    ┌──────┴──────┐
+    │             │
+   Yes           No (Show Edition Selector)
+    │             ↓
+    │      Check Storage Availability
+    │             ↓
+    │      Display Editions:
+    │      ✓ Compatible (green)
+    │      ✗ Incompatible (greyed out)
+    │             ↓
+    │      User Selects Edition
+    │             ↓
+    │      Confirm Installation
+    │             ↓
+    │      Download & Install
+    │             ↓
+    │      Reboot into New Edition
+    │
+    └──────→ Start Using mythOS
+```
+
+**Storage Checking:**
+The script checks available storage and compares against edition requirements:
+- Chase: 50MB
+- Pegasus: 85MB
+- Nekomata: 120MB
+- Hydra: 150MB
+- Dragon: 250MB
+
+**Integration:**
+Should be added to Chase Edition overlay to run on first boot:
+- Add to `/etc/profile.d/mythos-welcome.sh`
+- Or add to `.xinitrc` to run before X starts
+
+---
+
+### 2. build-chase-edition.sh
 **Purpose:** Automated ISO builder for the Chase (Base) Edition
 
 **Description:**
@@ -66,7 +131,7 @@ export CONFIG_DIR="./configs"           # Configuration directory
 
 ---
 
-### 2. theme-installer.sh
+### 3. theme-installer.sh
 **Purpose:** Automated theme installation and management system
 
 **Description:**
@@ -134,7 +199,7 @@ sudo ./theme-installer.sh install Hydra
 
 ---
 
-### 3. ai-hub-launcher.py
+### 4. ai-hub-launcher.py
 **Purpose:** Unified launcher for AI assistants and tools
 
 **Description:**
