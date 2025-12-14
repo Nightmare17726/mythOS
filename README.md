@@ -4,6 +4,8 @@
 
 A lightweight Linux distribution designed to resurrect obsolete hardware, specifically WebDT 366 tablets (64-128MB RAM, 128-256MB storage), featuring mythology-themed operating system editions with mascot guides and intelligent storage-aware theme selection.
 
+📖 **[→ Getting Started Guide](GETTING_STARTED.md)** - New users start here!
+
 ---
 
 ## 🌟 Project Overview
@@ -98,6 +100,14 @@ Retro gaming paradise with emulators, compatibility layers, and classic games.
 ---
 
 ## 🚀 Quick Start
+
+> **⚡ New User? Start Here!**
+> Check out **[GETTING_STARTED.md](GETTING_STARTED.md)** for super simple step-by-step instructions on how to:
+> - Test mythOS in a Virtual Machine (VM) on macOS or Windows
+> - Create a bootable USB drive
+> - Boot mythOS on real hardware
+>
+> **No Linux experience required!** 🎉
 
 ### System Requirements
 
