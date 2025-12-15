@@ -1,0 +1,57 @@
+#!/bin/sh
+# mythOS X11 Startup Script
+
+# Set paths
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
+
+# Load X resources
+if [ -f "$HOME/.Xresources" ]; then
+    xrdb -merge "$HOME/.Xresources"
+fi
+
+# Load X keyboard map
+if [ -f "$HOME/.Xmodmap" ]; then
+    xmodmap "$HOME/.Xmodmap"
+fi
+
+# Set wallpaper/background
+if command -v feh > /dev/null 2>&1; then
+    if [ -f "/usr/share/mythOS/wallpaper.png" ]; then
+        feh --bg-scale /usr/share/mythOS/wallpaper.png &
+    else
+        xsetroot -solid "#2E3440" &
+    fi
+else
+    xsetroot -solid "#2E3440" &
+fi
+
+# Start panel/taskbar
+if command -v tint2 > /dev/null 2>&1; then
+    tint2 &
+fi
+
+# Start network manager applet if available
+if command -v nm-applet > /dev/null 2>&1; then
+    nm-applet &
+fi
+
+# Start volume control applet if available
+if command -v volumeicon > /dev/null 2>&1; then
+    volumeicon &
+fi
+
+# Start composite manager for effects (if available)
+if command -v compton > /dev/null 2>&1; then
+    compton -b &
+fi
+
+# Launch mythOS welcome on first boot (GUI editions)
+if [ ! -f "$HOME/.mythos-welcomed" ]; then
+    if [ -f "/usr/local/bin/theme-selector-gui" ]; then
+        (sleep 2 && theme-selector-gui) &
+        touch "$HOME/.mythos-welcomed"
+    fi
+fi
+
+# Start window manager (Openbox)
+exec openbox-session

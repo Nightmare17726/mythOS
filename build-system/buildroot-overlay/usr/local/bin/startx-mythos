@@ -1,0 +1,18 @@
+#!/bin/bash
+# mythOS GUI Launcher
+# Starts the X11 GUI environment
+
+# Check if X is already running
+if xdpyinfo -display ":0" >/dev/null 2>&1; then
+    echo "X11 is already running on display :0"
+    exit 1
+fi
+
+# Start X11
+if command -v startx >/dev/null 2>&1; then
+    startx /etc/X11/xinit/xinitrc
+else
+    echo "Error: startx not found"
+    echo "Install X11 utilities first"
+    exit 1
+fi

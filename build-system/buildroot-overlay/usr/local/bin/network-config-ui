@@ -1,0 +1,294 @@
+#!/bin/bash
+# mythOS Network Configuration Wizard
+# Works in both terminal (dialog) and GUI (zenity) modes
+
+set -e
+
+# Detect if running in GUI mode
+if [ -n "$DISPLAY" ] && command -v zenity >/dev/null 2>&1; then
+    USE_GUI=true
+else
+    USE_GUI=false
+fi
+
+# Helper functions for UI abstraction
+show_info() {
+    local title="$1"
+    local message="$2"
+
+    if [ "$USE_GUI" = true ]; then
+        zenity --info --title="$title" --text="$message" --width=400
+    else
+        dialog --title "$title" --msgbox "$message" 10 50
+    fi
+}
+
+show_error() {
+    local title="$1"
+    local message="$2"
+
+    if [ "$USE_GUI" = true ]; then
+        zenity --error --title="$title" --text="$message" --width=400
+    else
+        dialog --title "$title" --msgbox "ERROR: $message" 10 50
+    fi
+}
+
+show_menu() {
+    local title="$1"
+    shift
+    local options=("$@")
+
+    if [ "$USE_GUI" = true ]; then
+        zenity --list --title="$title" --column="Option" --column="Description" "${options[@]}" --height=400 --width=500
+    else
+        dialog --title "$title" --menu "Select an option:" 15 60 5 "${options[@]}" 2>&1 >/dev/tty
+    fi
+}
+
+input_text() {
+    local title="$1"
+    local prompt="$2"
+    local default="$3"
+
+    if [ "$USE_GUI" = true ]; then
+        zenity --entry --title="$title" --text="$prompt" --entry-text="$default" --width=400
+    else
+        dialog --title "$title" --inputbox "$prompt" 10 50 "$default" 2>&1 >/dev/tty
+    fi
+}
+
+# Check if running as root
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        show_error "Permission Error" "This tool must be run as root.\n\nPlease run:\nsudo network-config-ui"
+        exit 1
+    fi
+}
+
+# Scan for WiFi networks
+scan_wifi() {
+    local interface="$1"
+
+    # Bring interface up
+    ip link set "$interface" up 2>/dev/null
+
+    # Scan for networks
+    if command -v iw >/dev/null 2>&1; then
+        iw dev "$interface" scan 2>/dev/null | grep 'SSID:' | sed 's/.*SSID: //' | grep -v '^$'
+    else
+        iwlist "$interface" scan 2>/dev/null | grep 'ESSID:' | sed 's/.*ESSID:"\(.*\)".*/\1/' | grep -v '^$'
+    fi
+}
+
+# Configure WiFi
+configure_wifi() {
+    # Get list of wireless interfaces
+    local interfaces=($(iw dev 2>/dev/null | grep Interface | awk '{print $2}'))
+
+    if [ ${#interfaces[@]} -eq 0 ]; then
+        show_error "No WiFi" "No wireless interfaces found.\n\nMake sure your WiFi hardware is properly installed."
+        return 1
+    fi
+
+    local interface="${interfaces[0]}"
+
+    # Scan for networks
+    show_info "Scanning" "Scanning for WiFi networks..."
+
+    local networks=($(scan_wifi "$interface"))
+
+    if [ ${#networks[@]} -eq 0 ]; then
+        show_error "No Networks" "No WiFi networks found.\n\nMake sure you're in range of a wireless network."
+        return 1
+    fi
+
+    # Let user select network
+    local network_list=()
+    for i in "${!networks[@]}"; do
+        network_list+=("$((i+1))" "${networks[$i]}")
+    done
+
+    local selected
+    if [ "$USE_GUI" = true ]; then
+        selected=$(zenity --list --title="Select WiFi Network" --column="№" --column="Network" "${network_list[@]}" --height=400 --width=400)
+        [ -z "$selected" ] && return 1
+        selected=$((selected - 1))
+    else
+        selected=$(dialog --title "WiFi Networks" --menu "Select a network:" 20 60 10 "${network_list[@]}" 2>&1 >/dev/tty)
+        [ -z "$selected" ] && return 1
+        selected=$((selected - 1))
+    fi
+
+    local ssid="${networks[$selected]}"
+
+    # Get password
+    local password
+    if [ "$USE_GUI" = true ]; then
+        password=$(zenity --password --title="WiFi Password" --text="Enter password for network: $ssid")
+    else
+        password=$(dialog --title "WiFi Password" --passwordbox "Enter password for $ssid:" 10 50 2>&1 >/dev/tty)
+    fi
+
+    [ -z "$password" ] && return 1
+
+    # Configure wpa_supplicant
+    cat > /etc/wpa_supplicant.conf << EOF
+ctrl_interface=/var/run/wpa_supplicant
+update_config=1
+
+network={
+    ssid="$ssid"
+    psk="$password"
+    key_mgmt=WPA-PSK
+}
+EOF
+
+    # Start wpa_supplicant
+    killall wpa_supplicant 2>/dev/null || true
+    wpa_supplicant -B -i "$interface" -c /etc/wpa_supplicant.conf
+
+    # Wait for connection
+    sleep 3
+
+    # Start DHCP
+    killall dhcpcd 2>/dev/null || true
+    dhcpcd "$interface"
+
+    # Check connection
+    sleep 2
+    if ip addr show "$interface" | grep -q "inet "; then
+        local ip=$(ip addr show "$interface" | grep "inet " | awk '{print $2}')
+        show_info "Connected" "Successfully connected to $ssid\n\nIP Address: $ip"
+    else
+        show_error "Connection Failed" "Failed to connect to $ssid\n\nPlease check your password and try again."
+        return 1
+    fi
+}
+
+# Configure Ethernet (DHCP or Static)
+configure_ethernet() {
+    local interfaces=($(ip link show | grep -E '^[0-9]+: eth|^[0-9]+: enp' | cut -d: -f2 | tr -d ' '))
+
+    if [ ${#interfaces[@]} -eq 0 ]; then
+        show_error "No Ethernet" "No ethernet interfaces found."
+        return 1
+    fi
+
+    local interface="${interfaces[0]}"
+
+    # Ask for DHCP or Static
+    local config_type
+    if [ "$USE_GUI" = true ]; then
+        config_type=$(zenity --list --title="Ethernet Configuration" --text="Select configuration type for $interface:" --column="Type" "DHCP" "Static IP" --height=200 --width=300)
+    else
+        config_type=$(dialog --title "Ethernet Configuration" --menu "Select configuration type for $interface:" 12 50 2 \
+            "1" "DHCP (Automatic)" \
+            "2" "Static IP" \
+            2>&1 >/dev/tty)
+        case "$config_type" in
+            1) config_type="DHCP" ;;
+            2) config_type="Static IP" ;;
+            *) return 1 ;;
+        esac
+    fi
+
+    [ -z "$config_type" ] && return 1
+
+    # Bring interface up
+    ip link set "$interface" up
+
+    if [ "$config_type" = "DHCP" ]; then
+        # Start DHCP
+        killall dhcpcd 2>/dev/null || true
+        dhcpcd "$interface"
+
+        sleep 2
+        local ip=$(ip addr show "$interface" | grep "inet " | awk '{print $2}')
+        if [ -n "$ip" ]; then
+            show_info "Connected" "Ethernet configured with DHCP\n\nIP Address: $ip"
+        else
+            show_error "DHCP Failed" "Failed to obtain IP address via DHCP."
+            return 1
+        fi
+    else
+        # Static IP configuration
+        local ip_addr=$(input_text "IP Address" "Enter IP address (e.g., 192.168.1.100):" "192.168.1.100")
+        [ -z "$ip_addr" ] && return 1
+
+        local netmask=$(input_text "Netmask" "Enter netmask (e.g., 255.255.255.0):" "255.255.255.0")
+        [ -z "$netmask" ] && return 1
+
+        local gateway=$(input_text "Gateway" "Enter gateway (e.g., 192.168.1.1):" "192.168.1.1")
+        [ -z "$gateway" ] && return 1
+
+        local dns=$(input_text "DNS Server" "Enter DNS server (e.g., 8.8.8.8):" "8.8.8.8")
+        [ -z "$dns" ] && return 1
+
+        # Apply configuration
+        ip addr flush dev "$interface"
+        ip addr add "$ip_addr/$netmask" dev "$interface"
+        ip route add default via "$gateway"
+        echo "nameserver $dns" > /etc/resolv.conf
+
+        show_info "Configured" "Static IP configured:\n\nIP: $ip_addr\nGateway: $gateway\nDNS: $dns"
+    fi
+}
+
+# Show current network status
+show_status() {
+    local status=""
+
+    # Get all network interfaces
+    for iface in $(ip link show | grep -E '^[0-9]+:' | cut -d: -f2 | tr -d ' '); do
+        [ "$iface" = "lo" ] && continue
+
+        local state=$(ip link show "$iface" | grep -oP '(?<=state )\w+')
+        local ip=$(ip addr show "$iface" | grep "inet " | awk '{print $2}' | head -1)
+
+        status+="$iface: $state"
+        [ -n "$ip" ] && status+=" ($ip)"
+        status+="\n"
+    done
+
+    show_info "Network Status" "$status"
+}
+
+# Main menu
+main_menu() {
+    while true; do
+        local choice
+        if [ "$USE_GUI" = true ]; then
+            choice=$(zenity --list --title="mythOS Network Configuration" \
+                --text="Select an option:" \
+                --column="Action" --column="Description" \
+                "wifi" "Configure WiFi" \
+                "ethernet" "Configure Ethernet" \
+                "status" "Show Network Status" \
+                "exit" "Exit" \
+                --height=350 --width=450)
+        else
+            choice=$(dialog --title "mythOS Network Configuration" \
+                --menu "Select an option:" 15 60 4 \
+                "1" "Configure WiFi" \
+                "2" "Configure Ethernet" \
+                "3" "Show Network Status" \
+                "4" "Exit" \
+                2>&1 >/dev/tty)
+        fi
+
+        case "$choice" in
+            wifi|1) configure_wifi ;;
+            ethernet|2) configure_ethernet ;;
+            status|3) show_status ;;
+            exit|4|"") break ;;
+        esac
+    done
+}
+
+# Main
+check_root
+main_menu
+
+# Clear screen if using dialog
+[ "$USE_GUI" = false ] && clear

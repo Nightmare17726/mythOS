@@ -1,0 +1,419 @@
+#!/bin/bash
+# mythOS Disk Installer
+# Installs mythOS to permanent storage with proper partitioning
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Partition layout
+# /dev/sdX1 - 100MB - /boot (ext4)
+# /dev/sdX2 - Varies - /system (ext4, read-only root)
+# /dev/sdX3 - Remaining - /home (ext4, user data)
+
+INSTALLER_VERSION="1.0.0"
+
+print_header() {
+    clear
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}    mythOS Installer v${INSTALLER_VERSION}${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+}
+
+print_warning() {
+    echo -e "${RED}⚠ WARNING: This will ERASE ALL DATA on the selected disk!${NC}"
+    echo -e "${RED}⚠ Make sure you have backed up any important files!${NC}"
+    echo ""
+}
+
+detect_disks() {
+    # Find all available disks (excluding loop devices and current boot media)
+    DISKS=($(lsblk -dpno NAME,SIZE,TYPE | grep 'disk' | awk '{print $1}'))
+    DISK_SIZES=($(lsblk -dpno NAME,SIZE,TYPE | grep 'disk' | awk '{print $2}'))
+}
+
+show_disk_menu() {
+    print_header
+    echo -e "${GREEN}Available disks:${NC}"
+    echo ""
+
+    for i in "${!DISKS[@]}"; do
+        DISK="${DISKS[$i]}"
+        SIZE="${DISK_SIZES[$i]}"
+        MODEL=$(lsblk -dno MODEL "$DISK" 2>/dev/null || echo "Unknown")
+
+        echo -e "  ${YELLOW}[$((i+1))]${NC} $DISK - $SIZE - $MODEL"
+
+        # Show current partitions if any
+        PARTS=$(lsblk -no NAME "$DISK" | tail -n +2)
+        if [ -n "$PARTS" ]; then
+            echo -e "      ${BLUE}Current partitions:${NC}"
+            while IFS= read -r part; do
+                SIZE_P=$(lsblk -no SIZE "/dev/$part" 2>/dev/null || echo "?")
+                FSTYPE=$(lsblk -no FSTYPE "/dev/$part" 2>/dev/null || echo "none")
+                echo -e "      ${BLUE}├─${NC} $part ($SIZE_P, $FSTYPE)"
+            done <<< "$PARTS"
+        fi
+        echo ""
+    done
+
+    echo -e "  ${YELLOW}[0]${NC} Cancel and exit"
+    echo ""
+}
+
+select_disk() {
+    while true; do
+        show_disk_menu
+        print_warning
+
+        read -p "Select disk to install mythOS [0-${#DISKS[@]}]: " choice
+
+        if [ "$choice" = "0" ]; then
+            echo "Installation cancelled."
+            exit 0
+        fi
+
+        if [ "$choice" -ge 1 ] && [ "$choice" -le "${#DISKS[@]}" ]; then
+            SELECTED_DISK="${DISKS[$((choice-1))]}"
+            SELECTED_SIZE="${DISK_SIZES[$((choice-1))]}"
+
+            print_header
+            echo -e "${RED}You selected: $SELECTED_DISK ($SELECTED_SIZE)${NC}"
+            echo -e "${RED}ALL DATA ON THIS DISK WILL BE ERASED!${NC}"
+            echo ""
+            read -p "Type 'YES' in capital letters to confirm: " confirm
+
+            if [ "$confirm" = "YES" ]; then
+                break
+            else
+                echo "Confirmation failed. Please try again."
+                sleep 2
+            fi
+        else
+            echo "Invalid selection."
+            sleep 2
+        fi
+    done
+}
+
+calculate_partition_sizes() {
+    # Get disk size in bytes
+    DISK_BYTES=$(blockdev --getsize64 "$SELECTED_DISK")
+    DISK_MB=$((DISK_BYTES / 1024 / 1024))
+
+    # Boot partition: 100MB
+    BOOT_SIZE_MB=100
+
+    # System partition size based on current edition
+    # Chase: 100MB, Pegasus: 150MB, Nekomata: 200MB, Hydra: 250MB, Dragon: 350MB
+    if [ -f /etc/mythos-release ]; then
+        EDITION=$(grep "EDITION=" /etc/mythos-release | cut -d'"' -f2)
+    else
+        EDITION="chase"
+    fi
+
+    case "$EDITION" in
+        chase)
+            SYSTEM_SIZE_MB=100
+            ;;
+        pegasus)
+            SYSTEM_SIZE_MB=150
+            ;;
+        nekomata)
+            SYSTEM_SIZE_MB=200
+            ;;
+        hydra)
+            SYSTEM_SIZE_MB=250
+            ;;
+        dragon)
+            SYSTEM_SIZE_MB=350
+            ;;
+        *)
+            SYSTEM_SIZE_MB=150
+            ;;
+    esac
+
+    # Home gets remaining space
+    HOME_SIZE_MB=$((DISK_MB - BOOT_SIZE_MB - SYSTEM_SIZE_MB - 10)) # 10MB buffer
+
+    echo "Disk size: ${DISK_MB}MB"
+    echo "Boot partition: ${BOOT_SIZE_MB}MB"
+    echo "System partition: ${SYSTEM_SIZE_MB}MB"
+    echo "Home partition: ${HOME_SIZE_MB}MB"
+}
+
+partition_disk() {
+    print_header
+    echo -e "${BLUE}Step 1/6: Partitioning disk...${NC}"
+    echo ""
+
+    calculate_partition_sizes
+    echo ""
+
+    # Unmount any mounted partitions
+    for part in "${SELECTED_DISK}"*; do
+        if mountpoint -q "$part" 2>/dev/null; then
+            umount "$part" 2>/dev/null || true
+        fi
+    done
+
+    # Wipe disk
+    dd if=/dev/zero of="$SELECTED_DISK" bs=1M count=10 conv=fsync 2>/dev/null
+
+    # Create partition table and partitions using fdisk
+    (
+        echo o      # Create new DOS partition table
+        echo n      # New partition
+        echo p      # Primary
+        echo 1      # Partition 1
+        echo        # Default start
+        echo "+${BOOT_SIZE_MB}M"
+        echo n      # New partition
+        echo p      # Primary
+        echo 2      # Partition 2
+        echo        # Default start
+        echo "+${SYSTEM_SIZE_MB}M"
+        echo n      # New partition
+        echo p      # Primary
+        echo 3      # Partition 3
+        echo        # Default start
+        echo        # Use remaining space
+        echo a      # Make partition 1 bootable
+        echo 1
+        echo w      # Write and exit
+    ) | fdisk "$SELECTED_DISK" >/dev/null 2>&1
+
+    # Force kernel to re-read partition table
+    partprobe "$SELECTED_DISK"
+    sleep 2
+
+    # Set partition device names
+    if [ -e "${SELECTED_DISK}1" ]; then
+        BOOT_PART="${SELECTED_DISK}1"
+        SYSTEM_PART="${SELECTED_DISK}2"
+        HOME_PART="${SELECTED_DISK}3"
+    elif [ -e "${SELECTED_DISK}p1" ]; then
+        BOOT_PART="${SELECTED_DISK}p1"
+        SYSTEM_PART="${SELECTED_DISK}p2"
+        HOME_PART="${SELECTED_DISK}p3"
+    else
+        echo -e "${RED}Error: Could not find partition devices${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ Partitioning complete${NC}"
+}
+
+format_partitions() {
+    print_header
+    echo -e "${BLUE}Step 2/6: Formatting partitions...${NC}"
+    echo ""
+
+    echo "Formatting $BOOT_PART as ext4 (boot)..."
+    mkfs.ext4 -F -L "mythOS_boot" "$BOOT_PART" >/dev/null 2>&1
+
+    echo "Formatting $SYSTEM_PART as ext4 (system)..."
+    mkfs.ext4 -F -L "mythOS_system" "$SYSTEM_PART" >/dev/null 2>&1
+
+    echo "Formatting $HOME_PART as ext4 (home)..."
+    mkfs.ext4 -F -L "mythOS_home" "$HOME_PART" >/dev/null 2>&1
+
+    echo ""
+    echo -e "${GREEN}✓ Formatting complete${NC}"
+}
+
+mount_partitions() {
+    print_header
+    echo -e "${BLUE}Step 3/6: Mounting partitions...${NC}"
+    echo ""
+
+    # Create temporary mount points
+    INSTALL_ROOT="/tmp/mythos-install"
+    mkdir -p "$INSTALL_ROOT"
+
+    mount "$SYSTEM_PART" "$INSTALL_ROOT"
+    mkdir -p "$INSTALL_ROOT/boot"
+    mkdir -p "$INSTALL_ROOT/home"
+
+    mount "$BOOT_PART" "$INSTALL_ROOT/boot"
+    mount "$HOME_PART" "$INSTALL_ROOT/home"
+
+    echo -e "${GREEN}✓ Partitions mounted at $INSTALL_ROOT${NC}"
+}
+
+install_system() {
+    print_header
+    echo -e "${BLUE}Step 4/6: Installing system files...${NC}"
+    echo ""
+
+    echo "Copying system files (this may take a few minutes)..."
+
+    # Copy entire root filesystem excluding certain directories
+    rsync -av --progress \
+        --exclude='/proc/*' \
+        --exclude='/sys/*' \
+        --exclude='/dev/*' \
+        --exclude='/tmp/*' \
+        --exclude='/run/*' \
+        --exclude='/mnt/*' \
+        --exclude='/media/*' \
+        --exclude='/lost+found' \
+        --exclude='/home/*' \
+        / "$INSTALL_ROOT/" 2>&1 | grep -v '^building file list'
+
+    # Create necessary directories
+    mkdir -p "$INSTALL_ROOT"/{proc,sys,dev,tmp,run,mnt,media}
+
+    # Copy kernel to boot partition
+    if [ -f /boot/bzImage ]; then
+        cp /boot/bzImage "$INSTALL_ROOT/boot/"
+    fi
+
+    echo ""
+    echo -e "${GREEN}✓ System files installed${NC}"
+}
+
+install_bootloader() {
+    print_header
+    echo -e "${BLUE}Step 5/6: Installing bootloader...${NC}"
+    echo ""
+
+    # Install SYSLINUX bootloader
+    echo "Installing SYSLINUX..."
+
+    # Install syslinux to boot partition
+    syslinux --install "$BOOT_PART"
+
+    # Install MBR
+    dd if=/usr/lib/syslinux/mbr/mbr.bin of="$SELECTED_DISK" bs=440 count=1 conv=notrunc 2>/dev/null
+
+    # Create syslinux config
+    cat > "$INSTALL_ROOT/boot/syslinux.cfg" << 'EOF'
+DEFAULT linux
+TIMEOUT 50
+PROMPT 1
+
+LABEL linux
+    SAY Booting mythOS...
+    KERNEL bzImage
+    APPEND root=LABEL=mythOS_system rw quiet splash
+EOF
+
+    # Get actual partition UUIDs for fstab
+    BOOT_UUID=$(blkid -s UUID -o value "$BOOT_PART")
+    SYSTEM_UUID=$(blkid -s UUID -o value "$SYSTEM_PART")
+    HOME_UUID=$(blkid -s UUID -o value "$HOME_PART")
+
+    # Create fstab
+    cat > "$INSTALL_ROOT/etc/fstab" << EOF
+# mythOS filesystem table
+UUID=$SYSTEM_UUID  /       ext4    defaults,ro        0 1
+UUID=$BOOT_UUID    /boot   ext4    defaults           0 2
+UUID=$HOME_UUID    /home   ext4    defaults,noatime   0 2
+proc               /proc   proc    defaults           0 0
+sysfs              /sys    sysfs   defaults           0 0
+tmpfs              /tmp    tmpfs   mode=1777          0 0
+tmpfs              /run    tmpfs   mode=0755          0 0
+devpts             /dev/pts devpts gid=5,mode=620     0 0
+EOF
+
+    echo ""
+    echo -e "${GREEN}✓ Bootloader installed${NC}"
+}
+
+cleanup() {
+    print_header
+    echo -e "${BLUE}Step 6/6: Cleaning up...${NC}"
+    echo ""
+
+    # Unmount partitions
+    umount "$INSTALL_ROOT/boot" 2>/dev/null || true
+    umount "$INSTALL_ROOT/home" 2>/dev/null || true
+    umount "$INSTALL_ROOT" 2>/dev/null || true
+
+    # Remove temporary directory
+    rm -rf "$INSTALL_ROOT"
+
+    echo -e "${GREEN}✓ Cleanup complete${NC}"
+}
+
+installation_complete() {
+    print_header
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}    Installation Complete!${NC}"
+    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "mythOS has been installed to ${YELLOW}$SELECTED_DISK${NC}"
+    echo ""
+    echo "Partition layout:"
+    echo -e "  ${BLUE}$BOOT_PART${NC}   - Boot partition (100MB)"
+    echo -e "  ${BLUE}$SYSTEM_PART${NC} - System partition (${SYSTEM_SIZE_MB}MB, read-only)"
+    echo -e "  ${BLUE}$HOME_PART${NC}   - Home partition (${HOME_SIZE_MB}MB)"
+    echo ""
+    echo -e "${YELLOW}Next steps:${NC}"
+    echo "  1. Remove the installation media"
+    echo "  2. Reboot your computer"
+    echo "  3. Enjoy mythOS!"
+    echo ""
+    read -p "Press Enter to reboot, or Ctrl+C to exit..."
+    reboot
+}
+
+# Main installation flow
+main() {
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${RED}Error: This installer must be run as root${NC}"
+        echo "Please run: sudo mythos-installer"
+        exit 1
+    fi
+
+    # Check for required tools
+    for tool in fdisk mkfs.ext4 syslinux rsync dd blkid; do
+        if ! command -v "$tool" &> /dev/null; then
+            echo -e "${RED}Error: Required tool '$tool' not found${NC}"
+            exit 1
+        fi
+    done
+
+    # Detect available disks
+    detect_disks
+
+    if [ "${#DISKS[@]}" -eq 0 ]; then
+        echo -e "${RED}Error: No suitable disks found${NC}"
+        exit 1
+    fi
+
+    # Interactive disk selection
+    select_disk
+
+    # Run installation steps
+    partition_disk
+    sleep 1
+
+    format_partitions
+    sleep 1
+
+    mount_partitions
+    sleep 1
+
+    install_system
+    sleep 1
+
+    install_bootloader
+    sleep 1
+
+    cleanup
+    sleep 1
+
+    installation_complete
+}
+
+# Run main function
+main "$@"

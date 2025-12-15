@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+    <menu id="root-menu" label="mythOS">
+        <item label="Terminal">
+            <action name="Execute">
+                <command>xterm</command>
+            </action>
+        </item>
+
+        <separator />
+
+        <menu id="applications" label="Applications">
+            <item label="File Manager">
+                <action name="Execute">
+                    <command>pcmanfm</command>
+                </action>
+            </item>
+            <item label="Web Browser">
+                <action name="Execute">
+                    <command>firefox</command>
+                </action>
+            </item>
+            <item label="Text Editor">
+                <action name="Execute">
+                    <command>xterm -e nano</command>
+                </action>
+            </item>
+        </menu>
+
+        <menu id="system" label="System">
+            <item label="System Information">
+                <action name="Execute">
+                    <command>xterm -e system-info</command>
+                </action>
+            </item>
+            <item label="Theme Selector">
+                <action name="Execute">
+                    <command>theme-selector-gui</command>
+                </action>
+            </item>
+            <item label="Network Configuration">
+                <action name="Execute">
+                    <command>network-config-ui</command>
+                </action>
+            </item>
+            <item label="mythOS Installer">
+                <action name="Execute">
+                    <command>xterm -e sudo mythos-installer</command>
+                </action>
+            </item>
+        </menu>
+
+        <menu id="ai-hub" label="AI Hub">
+            <item label="Claude">
+                <action name="Execute">
+                    <command>ai-hub-launcher.py --ai claude</command>
+                </action>
+            </item>
+            <item label="ChatGPT">
+                <action name="Execute">
+                    <command>ai-hub-launcher.py --ai chatgpt</command>
+                </action>
+            </item>
+            <item label="Gemini">
+                <action name="Execute">
+                    <command>ai-hub-launcher.py --ai gemini</command>
+                </action>
+            </item>
+            <item label="All AI Tools">
+                <action name="Execute">
+                    <command>ai-hub-launcher.py</command>
+                </action>
+            </item>
+        </menu>
+
+        <separator />
+
+        <item label="Reconfigure">
+            <action name="Reconfigure" />
+        </item>
+        <item label="Exit">
+            <action name="Exit" />
+        </item>
+    </menu>
+</openbox_menu>
