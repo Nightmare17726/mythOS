@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Network Configuration
+GenericName=WiFi and Network Manager
+Comment=Configure wireless and wired network connections
+Icon=network-wireless
+Exec=network-config-ui
+Terminal=false
+Categories=System;Settings;Network;
+Keywords=wifi;network;wireless;ethernet;connection;

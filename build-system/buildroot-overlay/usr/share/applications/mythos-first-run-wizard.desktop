@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=First Run Setup
+GenericName=System Setup Wizard
+Comment=Configure mythOS system settings
+Icon=system-run
+Exec=first-run-wizard
+Terminal=false
+Categories=System;Settings;
+Keywords=setup;wizard;configuration;

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Parental Controls
+GenericName=Safety and Time Management
+Comment=Configure parental controls and safety features (Pegasus Edition)
+Icon=preferences-system-parental-controls
+Exec=parental-controls
+Terminal=false
+Categories=System;Settings;
+Keywords=parental;safety;controls;time;limits;
+OnlyShowIn=Pegasus;

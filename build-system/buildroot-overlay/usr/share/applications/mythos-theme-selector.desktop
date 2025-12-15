@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Edition Switcher
+GenericName=mythOS Edition Selector
+Comment=Switch between mythOS editions (Chase, Pegasus, Nekomata, Hydra, Dragon)
+Icon=preferences-desktop-theme
+Exec=theme-selector
+Terminal=false
+Categories=System;Settings;
+Keywords=edition;theme;switch;download;

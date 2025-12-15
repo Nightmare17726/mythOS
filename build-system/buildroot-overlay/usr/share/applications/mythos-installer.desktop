@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Install mythOS
+GenericName=System Installer
+Comment=Install mythOS to hard disk or USB drive
+Icon=system-software-install
+Exec=xterm -e "sudo mythos-installer"
+Terminal=false
+Categories=System;
+Keywords=install;installer;setup;

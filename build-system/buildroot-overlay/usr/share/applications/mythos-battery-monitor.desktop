@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Battery Monitor
+GenericName=Battery Status Monitor
+Comment=Monitor battery status and power management
+Icon=battery
+Exec=battery-monitor-gui
+Terminal=false
+Categories=System;Monitor;
+Keywords=battery;power;charging;
