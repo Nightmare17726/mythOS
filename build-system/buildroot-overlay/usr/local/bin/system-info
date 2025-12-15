@@ -1,0 +1,79 @@
+#!/bin/bash
+################################################################################
+# mythOS System Information Display
+# Shows hardware and system details
+################################################################################
+
+clear
+
+cat << 'HEADER'
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              mythOS System Information                       ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+HEADER
+
+echo ""
+
+# Edition info
+if [ -f /etc/mythos-release ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  mythOS Information"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    cat /etc/mythos-release
+    echo ""
+fi
+
+# Hostname
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  System"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Hostname: $(hostname)"
+echo "  Kernel:   $(uname -r)"
+echo "  Uptime:   $(uptime -p 2>/dev/null || uptime)"
+echo ""
+
+# CPU info
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Processor"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ -f /proc/cpuinfo ]; then
+    grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/^[ \t]*/  /'
+    echo "  Cores: $(grep -c processor /proc/cpuinfo)"
+fi
+echo ""
+
+# Memory info
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Memory"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ -f /proc/meminfo ]; then
+    total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    free_kb=$(grep MemAvailable /proc/meminfo | awk '{print $2}')
+    total_mb=$((total_kb / 1024))
+    free_mb=$((free_kb / 1024))
+    used_mb=$((total_mb - free_mb))
+
+    echo "  Total: ${total_mb}MB"
+    echo "  Used:  ${used_mb}MB"
+    echo "  Free:  ${free_mb}MB"
+fi
+echo ""
+
+# Storage info
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Storage"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+df -h | grep -E "Filesystem|/$|/system|/home" | awk '{printf "  %-15s %6s %6s %6s %4s\n", $1, $2, $3, $4, $5}'
+echo ""
+
+# Network info
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Network"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+ip -4 addr show | grep -E "inet " | awk '{print "  " $NF ": " $2}'
+echo ""
+
+echo "Press Enter to return to menu..."
+read

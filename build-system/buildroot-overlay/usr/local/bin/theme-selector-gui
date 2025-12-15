@@ -1,0 +1,9 @@
+#!/bin/bash
+# Wrapper script for GUI theme selector
+
+if [ -n "$DISPLAY" ]; then
+    python3 /usr/share/mythOS/gui-apps/theme-selector-gui.py
+else
+    echo "No display available. Use theme-selector-terminal instead."
+    theme-selector-terminal
+fi

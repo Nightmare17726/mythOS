@@ -1,0 +1,7 @@
+#!/bin/bash
+# Nekomata Edition Welcome
+
+python3 /usr/share/mythOS/gui-apps/theme-welcome.py \
+    "Nekomata" \
+    "/usr/share/mythOS/mascots/nekomata-avatar-256.png" \
+    "Greetings. I'm Nekomata, your productivity companion. This system is built for professionals who need to work smarter, not harder. Let's make today productive with efficient tools and AI integration."

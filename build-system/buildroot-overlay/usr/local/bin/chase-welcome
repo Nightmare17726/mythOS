@@ -1,0 +1,130 @@
+#!/bin/bash
+################################################################################
+# Chase Welcome Dialog - Terminal Interface
+# mythOS Chase Edition First Boot Experience
+################################################################################
+
+set -e
+
+FIRST_BOOT_FLAG="/home/chase/.chase-welcome-shown"
+
+clear
+
+# mythOS ASCII Logo
+cat << 'MYTHOSLOGO'
+    __  ___     __  __    ____  _____
+   /  |/  /_  _/ /_/ /_  / __ \/ ___/
+  / /|_/ / / / / __/ __ \/ / / /\__ \
+ / /  / / /_/ / /_/ / / / /_/ /___/ /
+/_/  /_/\__, /\__/_/ /_/\____//____/
+       /____/
+    Chase Edition - Base System
+MYTHOSLOGO
+
+echo ""
+
+# Show Chase ASCII art if available
+if [ -f /usr/share/mythOS/mascots/chase-ascii.txt ]; then
+    cat /usr/share/mythOS/mascots/chase-ascii.txt
+fi
+
+# Welcome message
+cat << 'WELCOME'
+
+═══════════════════════════════════════════════════════════════
+
+Hey there! I'm Chase, and welcome to mythOS!
+
+This system is pretty bare-bones right now – perfect for
+basic web browsing, managing files, and getting work done
+without all the bloat.
+
+But here's the cool part: you can transform this tablet into
+something amazing!
+
+• Want a gaming powerhouse? → Dragon Edition
+• Need study tools and AI? → Hydra Edition
+• Simplified for grandma?  → Pegasus Edition
+• Professional workspace? → Nekomata Edition
+
+Or stick with me if you like things simple and fast! 😄
+
+═══════════════════════════════════════════════════════════════
+
+WELCOME
+
+# First boot - offer theme selection
+if [ ! -f "$FIRST_BOOT_FLAG" ]; then
+    echo ""
+    read -p "Would you like to browse available editions now? (y/N): " browse_themes
+
+    if [[ $browse_themes =~ ^[Yy]$ ]]; then
+        theme-selector-terminal
+    fi
+
+    # Mark first boot complete
+    touch "$FIRST_BOOT_FLAG"
+fi
+
+# Main menu
+while true; do
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  mythOS Chase Edition - Main Menu"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "  1) Browse available editions"
+    echo "  2) Check system information"
+    echo "  3) Launch web browser (Links)"
+    echo "  4) File manager"
+    echo "  5) View help & tips"
+    echo "  6) Network setup"
+    echo "  7) Exit to shell"
+    echo ""
+    read -p "Choose an option (1-7): " choice
+
+    case $choice in
+        1)
+            theme-selector-terminal
+            ;;
+        2)
+            system-info
+            ;;
+        3)
+            echo ""
+            echo "Launching Links web browser..."
+            echo "Press 'q' to quit, 'g' for URL, ESC for menu"
+            sleep 2
+            links https://www.example.com
+            ;;
+        4)
+            echo ""
+            echo "File manager functionality would go here"
+            echo "For now, use 'ls' and 'cd' commands"
+            read -p "Press Enter to continue..."
+            ;;
+        5)
+            show-help
+            ;;
+        6)
+            echo ""
+            echo "Network Setup"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            ip addr show
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        7)
+            echo ""
+            echo "Exiting to shell. Type 'chase-welcome' to return to this menu."
+            echo ""
+            break
+            ;;
+        *)
+            echo ""
+            echo "Invalid option. Please try again."
+            sleep 1
+            ;;
+    esac
+done

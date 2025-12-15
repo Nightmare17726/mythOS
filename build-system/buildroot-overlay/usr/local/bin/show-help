@@ -1,0 +1,91 @@
+#!/bin/bash
+################################################################################
+# mythOS Help System
+# Quick tips and command reference
+################################################################################
+
+clear
+
+cat << 'HEADER'
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              mythOS Chase Edition - Help & Tips              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+HEADER
+
+echo ""
+
+cat << 'HELP'
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Quick Commands
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  chase-welcome          Return to main menu
+  theme-selector-terminal Browse and install other editions
+  system-info            Show system information
+  links <url>            Launch web browser
+
+  Basic Commands:
+    ls                   List files
+    cd <directory>       Change directory
+    pwd                  Show current directory
+    nano <file>          Edit text file
+    htop                 System monitor (if installed)
+    df -h                Disk usage
+    free -h              Memory usage
+    ip addr              Network interfaces
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Web Browser Tips (Links)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  While in Links browser:
+    g               Go to URL
+    q               Quit browser
+    ESC             Main menu
+    Arrow keys      Navigate
+    Enter           Follow link
+    Backspace       Go back
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  About mythOS Editions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Chase (50MB)     You are here! Minimal and fast
+  Pegasus (85MB)   Simplified for elderly users
+  Nekomata (120MB) Professional productivity tools
+  Hydra (150MB)    Education edition with AI tools
+  Dragon (250MB)   Gaming edition with emulators
+
+  To switch editions: Run 'theme-selector-terminal'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Network Setup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Ethernet: Should work automatically (DHCP)
+
+  WiFi:
+    1. List networks:   iwlist scan
+    2. Connect:         wpa_supplicant (see /etc/wpa_supplicant.conf)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Getting Help
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • Documentation: /usr/share/doc/mythos/
+  • GitHub: https://github.com/Nightmare17726/mythOS
+  • Issues: https://github.com/Nightmare17726/mythOS/issues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Chase says: "Keep it simple, keep it fast!" 🐆
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HELP
+
+echo ""
+echo "Press Enter to return to menu..."
+read

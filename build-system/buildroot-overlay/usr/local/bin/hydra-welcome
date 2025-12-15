@@ -1,0 +1,7 @@
+#!/bin/bash
+# Hydra Edition Welcome
+
+python3 /usr/share/mythOS/gui-apps/theme-welcome.py \
+    "Hydra" \
+    "/usr/share/mythOS/mascots/hydra-avatar-256.png" \
+    "Welcome, knowledge seeker! I am Hydra, guardian of many disciplines. Whether you're coding, composing, analyzing data, or conducting research – this system has the tools you need to excel in any field of study."

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Dragon Edition Welcome
+
+python3 /usr/share/mythOS/gui-apps/theme-welcome.py \
+    "Dragon" \
+    "/usr/share/mythOS/mascots/dragon-avatar-256.png" \
+    "ROAAAAR! Welcome, gamer! I'm Dragon, and this system is your new battle station! Load up your ROMs, fire up those emulators, and let's game like it's 1999! Your treasure hoard of retro games awaits!"

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Pegasus Edition Welcome
+
+python3 /usr/share/mythOS/gui-apps/theme-welcome.py \
+    "Pegasus" \
+    "/usr/share/mythOS/mascots/pegasus-avatar-256.png" \
+    "Hello, dear friend. My name is Pegasus, and I'm here to help you every step of the way. This computer is designed to be simple and clear - no confusing menus, no tiny buttons. Take all the time you need."

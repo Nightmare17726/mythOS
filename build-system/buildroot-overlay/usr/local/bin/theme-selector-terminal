@@ -1,0 +1,185 @@
+#!/bin/bash
+################################################################################
+# mythOS Theme Selector - Terminal Interface
+# Storage-aware edition selection for Chase Edition
+################################################################################
+
+set -e
+
+# Get available storage in MB
+get_available_storage() {
+    local available_kb=$(df -k /system 2>/dev/null | awk 'NR==2 {print $4}')
+    if [ -z "$available_kb" ]; then
+        # Fallback to root partition
+        available_kb=$(df -k / | awk 'NR==2 {print $4}')
+    fi
+    echo $((available_kb / 1024))
+}
+
+# Edition information
+declare -A EDITION_SIZES=(
+    ["Chase"]="50"
+    ["Pegasus"]="85"
+    ["Nekomata"]="120"
+    ["Hydra"]="150"
+    ["Dragon"]="250"
+)
+
+declare -A EDITION_DESC=(
+    ["Chase"]="Base system - Fast & efficient"
+    ["Pegasus"]="Simplified - Elderly-friendly"
+    ["Nekomata"]="Professional - Productivity suite"
+    ["Hydra"]="Education - AI & study tools"
+    ["Dragon"]="Gaming - Retro gaming paradise"
+)
+
+declare -A EDITION_FEATURES=(
+    ["Chase"]="Links browser, BusyBox tools, minimal footprint"
+    ["Pegasus"]="Large fonts, high contrast, patient guidance"
+    ["Nekomata"]="Office suite, AI integration, ProtonVPN"
+    ["Hydra"]="Multi-disciplinary tools, AI assistants, ProtonVPN"
+    ["Dragon"]="Emulators, Steam, WINE, gaming tools"
+)
+
+clear
+
+cat << 'HEADER'
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              mythOS Edition Selector                         ║
+║          Choose Your Perfect System                          ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+HEADER
+
+echo ""
+
+# Get available storage
+available_storage=$(get_available_storage)
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Available Storage: ${available_storage}MB"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Display editions
+edition_number=1
+declare -A number_to_edition
+
+for edition in Chase Pegasus Nekomata Hydra Dragon; do
+    size=${EDITION_SIZES[$edition]}
+    desc="${EDITION_DESC[$edition]}"
+    features="${EDITION_FEATURES[$edition]}"
+
+    echo "─────────────────────────────────────────────────────────────"
+
+    # Check compatibility
+    if [ $available_storage -ge $size ]; then
+        # Compatible
+        echo "  $edition_number) ✓ $edition Edition - ${size}MB"
+        echo "     $desc"
+        echo "     Features: $features"
+
+        # Warn if tight fit
+        if [ $available_storage -lt $((size + 20)) ]; then
+            echo "     ⚠ WARNING: Tight fit! Only $((available_storage - size))MB remaining"
+        else
+            echo "     Space after install: $((available_storage - size))MB"
+        fi
+
+        number_to_edition[$edition_number]=$edition
+    else
+        # Incompatible
+        echo "  ✗ $edition Edition - ${size}MB [INSUFFICIENT STORAGE]"
+        echo "     $desc"
+        echo "     Need $((size - available_storage))MB more space"
+    fi
+
+    echo ""
+    ((edition_number++))
+done
+
+echo "─────────────────────────────────────────────────────────────"
+echo "  0) Cancel and return to main menu"
+echo "─────────────────────────────────────────────────────────────"
+echo ""
+
+read -p "Select an edition to install (0-5): " edition_choice
+
+if [ "$edition_choice" = "0" ]; then
+    echo ""
+    echo "Staying with Chase Edition."
+    sleep 1
+    return 0
+fi
+
+# Validate choice
+if [ -z "${number_to_edition[$edition_choice]}" ]; then
+    echo ""
+    echo "Invalid choice. Returning to main menu."
+    sleep 2
+    return 1
+fi
+
+selected_edition="${number_to_edition[$edition_choice]}"
+selected_size=${EDITION_SIZES[$selected_edition]}
+
+# Confirmation
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  You selected: $selected_edition Edition (${selected_size}MB)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "This will:"
+echo "  • Download $selected_edition Edition from GitHub"
+echo "  • Replace Chase Edition system files"
+echo "  • Preserve your personal files in /home"
+echo "  • Create a backup of current system"
+echo "  • Require a reboot when complete"
+echo ""
+echo "Time estimate: 5-15 minutes (depending on connection)"
+echo ""
+
+read -p "Continue with installation? (y/N): " confirm
+
+if [[ ! $confirm =~ ^[Yy]$ ]]; then
+    echo ""
+    echo "Installation cancelled. Staying with Chase Edition."
+    sleep 2
+    return 0
+fi
+
+# Check if theme installer exists
+if [ ! -f /usr/local/bin/theme-installer ]; then
+    echo ""
+    echo "ERROR: Theme installer not found!"
+    echo "You can manually install editions later."
+    sleep 3
+    return 1
+fi
+
+# Run theme installer
+echo ""
+echo "Starting installation..."
+echo ""
+
+sudo /usr/local/bin/theme-installer install "$selected_edition"
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Installation Complete!"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Your system will reboot into $selected_edition Edition."
+    echo ""
+    read -p "Reboot now? (Y/n): " reboot_confirm
+
+    if [[ ! $reboot_confirm =~ ^[Nn]$ ]]; then
+        sudo reboot
+    fi
+else
+    echo ""
+    echo "Installation failed. Check the error messages above."
+    echo "Staying with Chase Edition."
+    sleep 3
+fi
