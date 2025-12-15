@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""
+mythOS Battery Monitor GUI
+Touch-optimized battery monitoring for tablets and portable devices
+"""
+
+import sys
+import os
+import subprocess
+import time
+from pathlib import Path
+
+try:
+    import gi
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk, Gdk, GLib
+except ImportError:
+    print("Error: GTK3 not available. Install python3-gi package.")
+    sys.exit(1)
+
+class BatteryMonitor(Gtk.Window):
+    def __init__(self):
+        super().__init__(title="mythOS Battery Monitor")
+
+        # Touch-optimized window settings
+        self.set_default_size(400, 600)
+        self.set_border_width(20)
+
+        # Enable touch events
+        self.add_events(Gdk.EventMask.TOUCH_MASK)
+
+        # Main container
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        self.add(main_box)
+
+        # Title
+        title = Gtk.Label()
+        title.set_markup('<span size="xx-large" weight="bold">Battery Status</span>')
+        main_box.pack_start(title, False, False, 0)
+
+        # Battery icon and percentage
+        self.battery_icon = Gtk.Label()
+        self.battery_icon.set_markup('<span size="80000">🔋</span>')
+        main_box.pack_start(self.battery_icon, False, False, 0)
+
+        self.percentage_label = Gtk.Label()
+        self.percentage_label.set_markup('<span size="x-large" weight="bold">--%%</span>')
+        main_box.pack_start(self.percentage_label, False, False, 0)
+
+        # Status label
+        self.status_label = Gtk.Label()
+        self.status_label.set_text("Checking...")
+        main_box.pack_start(self.status_label, False, False, 0)
+
+        # Progress bar
+        self.progress_bar = Gtk.ProgressBar()
+        self.progress_bar.set_show_text(True)
+        main_box.pack_start(self.progress_bar, False, False, 0)
+
+        # Details grid
+        details_grid = Gtk.Grid()
+        details_grid.set_column_spacing(20)
+        details_grid.set_row_spacing(15)
+        main_box.pack_start(details_grid, False, False, 0)
+
+        # Detail labels
+        self.time_remaining_label = Gtk.Label()
+        self.power_draw_label = Gtk.Label()
+        self.health_label = Gtk.Label()
+
+        details_grid.attach(Gtk.Label(label="Time Remaining:"), 0, 0, 1, 1)
+        details_grid.attach(self.time_remaining_label, 1, 0, 1, 1)
+
+        details_grid.attach(Gtk.Label(label="Power Draw:"), 0, 1, 1, 1)
+        details_grid.attach(self.power_draw_label, 1, 1, 1, 1)
+
+        details_grid.attach(Gtk.Label(label="Battery Health:"), 0, 2, 1, 1)
+        details_grid.attach(self.health_label, 1, 2, 1, 1)
+
+        # Power settings button
+        settings_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        main_box.pack_start(settings_box, False, False, 20)
+
+        power_save_btn = Gtk.Button(label="Power Save Mode")
+        power_save_btn.set_size_request(-1, 60)  # Touch-friendly height
+        power_save_btn.connect("clicked", self.toggle_power_save)
+        settings_box.pack_start(power_save_btn, True, True, 0)
+
+        # Close button
+        close_btn = Gtk.Button(label="Close")
+        close_btn.set_size_request(-1, 60)
+        close_btn.connect("clicked", Gtk.main_quit)
+        main_box.pack_end(close_btn, False, False, 0)
+
+        # Update timer
+        GLib.timeout_add_seconds(2, self.update_battery_status)
+        self.update_battery_status()
+
+    def get_battery_info(self):
+        """Read battery information from /sys/class/power_supply"""
+        battery_path = Path("/sys/class/power_supply")
+
+        for bat in battery_path.glob("BAT*"):
+            try:
+                capacity = (bat / "capacity").read_text().strip()
+                status = (bat / "status").read_text().strip()
+
+                # Optional fields
+                try:
+                    energy_now = int((bat / "energy_now").read_text().strip())
+                    power_now = int((bat / "power_now").read_text().strip())
+                    time_to_empty = energy_now / power_now if power_now > 0 else 0
+                except:
+                    energy_now = power_now = time_to_empty = None
+
+                return {
+                    'capacity': int(capacity),
+                    'status': status,
+                    'energy_now': energy_now,
+                    'power_now': power_now,
+                    'time_remaining': time_to_empty
+                }
+            except Exception as e:
+                print(f"Error reading battery info: {e}")
+                return None
+
+        return None
+
+    def update_battery_status(self):
+        """Update UI with current battery status"""
+        info = self.get_battery_info()
+
+        if not info:
+            self.percentage_label.set_markup('<span size="x-large">No Battery</span>')
+            self.status_label.set_text("Running on AC Power")
+            self.progress_bar.set_fraction(1.0)
+            return True
+
+        # Update percentage
+        capacity = info['capacity']
+        self.percentage_label.set_markup(f'<span size="x-large" weight="bold">{capacity}%</span>')
+        self.progress_bar.set_fraction(capacity / 100.0)
+
+        # Update icon based on level
+        if capacity > 80:
+            icon = "🔋"  # Full
+            color = "green"
+        elif capacity > 50:
+            icon = "🔋"  # Medium
+            color = "yellow"
+        elif capacity > 20:
+            icon = "🪫"  # Low
+            color = "orange"
+        else:
+            icon = "🪫"  # Critical
+            color = "red"
+
+        self.battery_icon.set_markup(f'<span size="80000">{icon}</span>')
+
+        # Update status
+        status = info['status']
+        if status == "Charging":
+            self.status_label.set_markup(f'<span foreground="green">⚡ Charging</span>')
+        elif status == "Discharging":
+            if capacity < 20:
+                self.status_label.set_markup(f'<span foreground="red">⚠ Battery Low!</span>')
+            else:
+                self.status_label.set_markup(f'<span foreground="{color}">Discharging</span>')
+        elif status == "Full":
+            self.status_label.set_markup('<span foreground="green">✓ Fully Charged</span>')
+        else:
+            self.status_label.set_text(status)
+
+        # Update details
+        if info['time_remaining']:
+            hours = int(info['time_remaining'])
+            minutes = int((info['time_remaining'] - hours) * 60)
+            self.time_remaining_label.set_text(f"{hours}h {minutes}m")
+        else:
+            self.time_remaining_label.set_text("Calculating...")
+
+        if info['power_now']:
+            watts = info['power_now'] / 1000000  # Convert to watts
+            self.power_draw_label.set_text(f"{watts:.1f}W")
+        else:
+            self.power_draw_label.set_text("N/A")
+
+        # Battery health (simplified)
+        if capacity > 90:
+            self.health_label.set_markup('<span foreground="green">Excellent</span>')
+        elif capacity > 70:
+            self.health_label.set_markup('<span foreground="blue">Good</span>')
+        elif capacity > 50:
+            self.health_label.set_markup('<span foreground="orange">Fair</span>')
+        else:
+            self.health_label.set_markup('<span foreground="red">Poor</span>')
+
+        return True  # Continue timer
+
+    def toggle_power_save(self, button):
+        """Toggle power save mode"""
+        try:
+            # Simple power save: reduce CPU governor to powersave
+            subprocess.run([
+                'cpufreq-set', '-g', 'powersave'
+            ], check=True)
+
+            dialog = Gtk.MessageDialog(
+                transient_for=self,
+                flags=0,
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text="Power Save Mode Enabled"
+            )
+            dialog.format_secondary_text(
+                "CPU frequency reduced to save power."
+            )
+            dialog.run()
+            dialog.destroy()
+        except Exception as e:
+            print(f"Error toggling power save: {e}")
+
+def main():
+    # Apply large touch-friendly theme
+    css = b"""
+    * {
+        font-size: 16px;
+    }
+    button {
+        min-height: 60px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+    label {
+        font-size: 16px;
+    }
+    """
+
+    css_provider = Gtk.CssProvider()
+    css_provider.load_from_data(css)
+
+    screen = Gdk.Screen.get_default()
+    style_context = Gtk.StyleContext()
+    style_context.add_provider_for_screen(
+        screen,
+        css_provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+
+    win = BatteryMonitor()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

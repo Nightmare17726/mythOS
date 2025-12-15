@@ -1,0 +1,45 @@
+#!/bin/bash
+# mythOS Backup & Restore Tool
+set -e
+BACKUP_DIR="/home/.mythos-backups"
+GREEN='\033[0;32m';BLUE='\033[0;34m';NC='\033[0m'
+log(){echo -e "${GREEN}[INFO]${NC} $1";}
+
+backup_system(){
+    mkdir -p "$BACKUP_DIR"
+    local date=$(date +%Y%m%d_%H%M%S)
+    local file="$BACKUP_DIR/mythos-backup-$date.tar.gz"
+
+    log "Creating backup..."
+    tar -czf "$file" \
+        --exclude='/proc/*' --exclude='/sys/*' --exclude='/dev/*' \
+        --exclude='/tmp/*' --exclude='/run/*' --exclude="$BACKUP_DIR/*" \
+        /home /etc/mythos 2>/dev/null || true
+
+    log "Backup saved: $file"
+    log "Size: $(du -h "$file"|cut -f1)"
+}
+
+restore_backup(){
+    local file="$1"
+    [ ! -f "$file" ]&&{echo "File not found: $file";exit 1;}
+
+    read -p "Restore from $file? This will overwrite current data. (y/N): " confirm
+    [[ ! $confirm =~ ^[Yy]$ ]]&&exit 0
+
+    log "Restoring backup..."
+    tar -xzf "$file" -C / 2>/dev/null
+    log "Restore complete. Reboot recommended."
+}
+
+list_backups(){
+    echo "Available backups:"
+    ls -lh "$BACKUP_DIR"/*.tar.gz 2>/dev/null || echo "No backups found"
+}
+
+case "${1:-help}" in
+    backup) backup_system;;
+    restore) restore_backup "$2";;
+    list) list_backups;;
+    *) echo "Usage: myth-backup {backup|restore <file>|list}";;
+esac

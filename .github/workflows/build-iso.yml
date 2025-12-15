@@ -1,0 +1,299 @@
+name: Build mythOS ISOs
+
+on:
+  push:
+    branches: [ main, develop, claude/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Edition to build (chase/pegasus/nekomata/hydra/dragon/all)'
+        required: false
+        default: 'chase'
+
+jobs:
+  build-chase:
+    name: Build Chase Edition
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.edition == 'chase' || github.event.inputs.edition == 'all' || github.event.inputs.edition == ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 python3-pip \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools \
+            imagemagick optipng
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02
+          restore-keys: |
+            ${{ runner.os }}-buildroot-
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build Chase Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-chase.sh --non-interactive
+        timeout-minutes: 180
+
+      - name: Verify ISO created
+        run: |
+          ls -lh build-system/output/mythOS-chase-*.iso
+          sha256sum build-system/output/mythOS-chase-*.iso
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mythOS-chase-iso
+          path: |
+            build-system/output/mythOS-chase-*.iso
+            build-system/output/mythOS-chase-*.iso.sha256
+            build-system/output/mythOS-chase-*.iso.md5
+          retention-days: 30
+
+  build-pegasus:
+    name: Build Pegasus Edition
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.edition == 'pegasus' || github.event.inputs.edition == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools imagemagick
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build Pegasus Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-pegasus.sh --non-interactive
+        timeout-minutes: 240
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mythOS-pegasus-iso
+          path: |
+            build-system/output/mythOS-pegasus-*.iso
+            build-system/output/mythOS-pegasus-*.iso.sha256
+            build-system/output/mythOS-pegasus-*.iso.md5
+          retention-days: 30
+
+  build-nekomata:
+    name: Build Nekomata Edition
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.edition == 'nekomata' || github.event.inputs.edition == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools imagemagick
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build Nekomata Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-nekomata.sh --non-interactive
+        timeout-minutes: 240
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mythOS-nekomata-iso
+          path: |
+            build-system/output/mythOS-nekomata-*.iso
+            build-system/output/mythOS-nekomata-*.iso.sha256
+            build-system/output/mythOS-nekomata-*.iso.md5
+          retention-days: 30
+
+  build-hydra:
+    name: Build Hydra Edition
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.edition == 'hydra' || github.event.inputs.edition == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools imagemagick
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build Hydra Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-hydra.sh --non-interactive
+        timeout-minutes: 300
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mythOS-hydra-iso
+          path: |
+            build-system/output/mythOS-hydra-*.iso
+            build-system/output/mythOS-hydra-*.iso.sha256
+            build-system/output/mythOS-hydra-*.iso.md5
+          retention-days: 30
+
+  build-dragon:
+    name: Build Dragon Edition
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.edition == 'dragon' || github.event.inputs.edition == 'all'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools imagemagick
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build Dragon Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-dragon.sh --non-interactive
+        timeout-minutes: 360
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mythOS-dragon-iso
+          path: |
+            build-system/output/mythOS-dragon-*.iso
+            build-system/output/mythOS-dragon-*.iso.sha256
+            build-system/output/mythOS-dragon-*.iso.md5
+          retention-days: 30
+
+  test-iso:
+    name: Test ISOs with QEMU
+    needs: [build-chase]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86
+
+      - name: Download Chase ISO
+        uses: actions/download-artifact@v3
+        with:
+          name: mythOS-chase-iso
+          path: build-system/output
+
+      - name: Verify ISO boots (headless)
+        run: |
+          timeout 120 qemu-system-i386 \
+            -m 256M \
+            -cdrom build-system/output/mythOS-chase-*.iso \
+            -boot d \
+            -nographic \
+            -serial mon:stdio \
+            || true
+
+      - name: Check ISO integrity
+        run: |
+          cd build-system/output
+          sha256sum -c mythOS-chase-*.iso.sha256

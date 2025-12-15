@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""
+mythOS First-Run Setup Wizard
+Guides users through initial system configuration
+Supports all editions with touch-optimized interface
+"""
+
+import sys, os, subprocess, json
+from pathlib import Path
+
+try:
+    import gi
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk, Gdk, GLib
+except ImportError:
+    # Fallback to terminal mode
+    exec(open('/usr/local/bin/first-run-wizard-terminal').read())
+    sys.exit(0)
+
+class FirstRunWizard(Gtk.Assistant):
+    def __init__(self):
+        super().__init__()
+        self.set_title("mythOS Setup Wizard")
+        self.set_default_size(800, 600)
+        self.set_border_width(20)
+
+        # Get edition from settings
+        self.edition = self.get_edition()
+
+        # Pages
+        self.add_welcome_page()
+        self.add_language_page()
+        self.add_network_page()
+        self.add_user_page()
+        self.add_customization_page()
+        self.add_summary_page()
+
+        self.connect("cancel", Gtk.main_quit)
+        self.connect("close", self.on_complete)
+
+    def get_edition(self):
+        try:
+            with open('/etc/mythos-release') as f:
+                for line in f:
+                    if 'EDITION=' in line:
+                        return line.split('=')[1].strip().strip('"').lower()
+        except:
+            pass
+        return "chase"
+
+    def add_welcome_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+
+        title = Gtk.Label()
+        title.set_markup('<span size="xx-large" weight="bold">Welcome to mythOS!</span>')
+        box.pack_start(title, False, False, 20)
+
+        desc = Gtk.Label()
+        desc.set_markup(f'''<span size="large">
+Welcome to mythOS {self.edition.capitalize()} Edition.
+
+This wizard will help you set up your system.
+
+Click "Forward" to begin configuration.
+</span>''')
+        desc.set_line_wrap(True)
+        box.pack_start(desc, True, True, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.INTRO)
+        self.set_page_title(box, "Welcome")
+        self.set_page_complete(box, True)
+
+    def add_language_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+
+        label = Gtk.Label()
+        label.set_markup('<span size="large" weight="bold">Select Language</span>')
+        box.pack_start(label, False, False, 10)
+
+        # Language selection
+        self.language_combo = Gtk.ComboBoxText()
+        self.language_combo.append("en", "English")
+        self.language_combo.append("es", "Español")
+        self.language_combo.append("fr", "Français")
+        self.language_combo.set_active(0)
+        box.pack_start(self.language_combo, False, False, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.CONTENT)
+        self.set_page_title(box, "Language")
+        self.set_page_complete(box, True)
+
+    def add_network_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+
+        label = Gtk.Label()
+        label.set_markup('<span size="large" weight="bold">Network Setup</span>')
+        box.pack_start(label, False, False, 10)
+
+        # Network config button
+        network_btn = Gtk.Button(label="Configure Network Now")
+        network_btn.set_size_request(-1, 60)
+        network_btn.connect("clicked", self.launch_network_config)
+        box.pack_start(network_btn, False, False, 0)
+
+        skip_label = Gtk.Label()
+        skip_label.set_text("You can skip this and configure network later")
+        box.pack_start(skip_label, False, False, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.CONTENT)
+        self.set_page_title(box, "Network")
+        self.set_page_complete(box, True)
+
+    def add_user_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+
+        label = Gtk.Label()
+        label.set_markup('<span size="large" weight="bold">Create User Account</span>')
+        box.pack_start(label, False, False, 10)
+
+        # Username
+        user_label = Gtk.Label(label="Username:")
+        box.pack_start(user_label, False, False, 0)
+
+        self.username_entry = Gtk.Entry()
+        self.username_entry.set_placeholder_text("Enter username")
+        self.username_entry.connect("changed", lambda e: self.validate_user_page())
+        box.pack_start(self.username_entry, False, False, 0)
+
+        # Password
+        pass_label = Gtk.Label(label="Password:")
+        box.pack_start(pass_label, False, False, 0)
+
+        self.password_entry = Gtk.Entry()
+        self.password_entry.set_visibility(False)
+        self.password_entry.set_placeholder_text("Enter password")
+        box.pack_start(self.password_entry, False, False, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.CONTENT)
+        self.set_page_title(box, "User Account")
+        self.set_page_complete(box, False)
+
+    def add_customization_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+
+        label = Gtk.Label()
+        label.set_markup('<span size="large" weight="bold">Customize mythOS</span>')
+        box.pack_start(label, False, False, 10)
+
+        # Touch mode
+        self.touch_mode_switch = Gtk.Switch()
+        self.touch_mode_switch.set_active(True)
+        touch_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        touch_box.pack_start(Gtk.Label(label="Enable Touch Mode:"), False, False, 0)
+        touch_box.pack_end(self.touch_mode_switch, False, False, 0)
+        box.pack_start(touch_box, False, False, 0)
+
+        # Large fonts
+        self.large_fonts_switch = Gtk.Switch()
+        fonts_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        fonts_box.pack_start(Gtk.Label(label="Use Large Fonts:"), False, False, 0)
+        fonts_box.pack_end(self.large_fonts_switch, False, False, 0)
+        box.pack_start(fonts_box, False, False, 0)
+
+        # Edition-specific options
+        if self.edition == "pegasus":
+            self.parental_controls_switch = Gtk.Switch()
+            pc_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            pc_box.pack_start(Gtk.Label(label="Enable Parental Controls:"), False, False, 0)
+            pc_box.pack_end(self.parental_controls_switch, False, False, 0)
+            box.pack_start(pc_box, False, False, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.CONTENT)
+        self.set_page_title(box, "Customization")
+        self.set_page_complete(box, True)
+
+    def add_summary_page(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+
+        title = Gtk.Label()
+        title.set_markup('<span size="xx-large" weight="bold">Setup Complete!</span>')
+        box.pack_start(title, False, False, 20)
+
+        self.summary_label = Gtk.Label()
+        self.summary_label.set_line_wrap(True)
+        box.pack_start(self.summary_label, True, True, 0)
+
+        self.append_page(box)
+        self.set_page_type(box, Gtk.AssistantPageType.CONFIRM)
+        self.set_page_title(box, "Summary")
+        self.set_page_complete(box, True)
+
+        self.connect("prepare", self.on_prepare_summary)
+
+    def validate_user_page(self):
+        username = self.username_entry.get_text()
+        password = self.password_entry.get_text()
+        page = self.get_nth_page(3)  # User page
+        self.set_page_complete(page, len(username) > 0 and len(password) > 0)
+
+    def launch_network_config(self, button):
+        try:
+            subprocess.Popen(['network-config-ui'])
+        except:
+            pass
+
+    def on_prepare_summary(self, assistant, page):
+        if self.get_page_type(page) == Gtk.AssistantPageType.CONFIRM:
+            lang = self.language_combo.get_active_id()
+            username = self.username_entry.get_text()
+            touch = self.touch_mode_switch.get_active()
+            large_fonts = self.large_fonts_switch.get_active()
+
+            summary = f"""
+<span size="large">
+Your mythOS system is configured with:
+
+• Language: {self.language_combo.get_active_text()}
+• Username: {username}
+• Touch Mode: {"Enabled" if touch else "Disabled"}
+• Large Fonts: {"Enabled" if large_fonts else "Disabled"}
+
+Click "Apply" to complete setup.
+</span>
+"""
+            self.summary_label.set_markup(summary)
+
+    def on_complete(self, assistant):
+        # Save settings
+        lang = self.language_combo.get_active_id()
+        username = self.username_entry.get_text()
+        password = self.password_entry.get_text()
+        touch = self.touch_mode_switch.get_active()
+        large_fonts = self.large_fonts_switch.get_active()
+
+        # Apply settings using myth-settings
+        try:
+            subprocess.run(['myth-settings', 'set-user', 'ui', 'touch_mode', str(touch).lower()])
+            subprocess.run(['myth-settings', 'set-user', 'ui', 'font_size', 'large' if large_fonts else 'normal'])
+            subprocess.run(['sudo', 'myth-settings', 'set-sys', 'display', 'language', lang])
+            subprocess.run(['sudo', 'myth-settings', 'set-sys', 'system', 'first_boot', 'false'])
+
+            # Create user
+            if username and password:
+                subprocess.run(['sudo', 'useradd', '-m', username])
+                proc = subprocess.Popen(['sudo', 'passwd', username], stdin=subprocess.PIPE)
+                proc.communicate(input=f"{password}\n{password}\n".encode())
+        except Exception as e:
+            print(f"Error applying settings: {e}")
+
+        # Mark first boot as complete
+        Path('/home/.mythos-first-run-complete').touch()
+
+        Gtk.main_quit()
+
+def main():
+    win = FirstRunWizard()
+    win.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,111 @@
+#!/bin/bash
+# mythOS Parental Controls (Pegasus Edition)
+# Simplified access control for children and elderly users
+
+set -e
+
+CONFIG_FILE="/etc/mythos/parental-controls.conf"
+BLOCKED_SITES="/etc/hosts.blocked"
+GREEN='\033[0;32m';RED='\033[0;31m';NC='\033[0m'
+
+log_info(){echo -e "${GREEN}[INFO]${NC} $1";}
+log_error(){echo -e "${RED}[ERROR]${NC} $1";}
+
+require_root(){
+    [ "$EUID" -ne 0 ]&&{log_error "Requires root";echo "Run: sudo parental-controls $@";exit 1;}
+}
+
+init_config(){
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    [ ! -f "$CONFIG_FILE" ]&&cat >"$CONFIG_FILE"<<'EOF'
+# mythOS Parental Controls Configuration
+enabled=true
+block_web=false
+time_limits=false
+max_hours_per_day=4
+allowed_hours_start=08:00
+allowed_hours_end=20:00
+safe_search=true
+block_downloads=false
+EOF
+}
+
+get_config(){grep "^$1=" "$CONFIG_FILE"|cut -d'=' -f2;}
+set_config(){sed -i "s/^$1=.*/$1=$2/" "$CONFIG_FILE";}
+
+enable_controls(){
+    require_root "$@"
+    set_config "enabled" "true"
+    log_info "Parental controls enabled"
+
+    # Setup safe search DNS
+    if [ "$(get_config safe_search)" = "true" ];then
+        echo "nameserver 208.67.222.123" >/etc/resolv.conf  # OpenDNS FamilyShield
+        log_info "Safe search DNS configured"
+    fi
+}
+
+disable_controls(){
+    require_root "$@"
+    set_config "enabled" "false"
+    echo "nameserver 8.8.8.8">/etc/resolv.conf
+    log_info "Parental controls disabled"
+}
+
+block_website(){
+    require_root "$@"
+    local site="$1"
+    echo "127.0.0.1 $site www.$site">>"$BLOCKED_SITES"
+    log_info "Blocked: $site"
+}
+
+list_blocked(){
+    [ -f "$BLOCKED_SITES" ]&&{
+        echo "Blocked websites:"
+        cat "$BLOCKED_SITES"|grep -v "^#"
+    }||echo "No blocked sites"
+}
+
+show_status(){
+    echo "mythOS Parental Controls Status"
+    echo "================================"
+    echo "Enabled: $(get_config enabled)"
+    echo "Web Filtering: $(get_config block_web)"
+    echo "Time Limits: $(get_config time_limits)"
+    echo "Max Hours/Day: $(get_config max_hours_per_day)"
+    echo "Allowed Hours: $(get_config allowed_hours_start) - $(get_config allowed_hours_end)"
+    echo "Safe Search: $(get_config safe_search)"
+}
+
+show_help(){
+    cat<<'EOF'
+mythOS Parental Controls (Pegasus Edition)
+
+Usage: parental-controls [command] [options]
+
+Commands:
+    enable              Enable parental controls
+    disable             Disable parental controls
+    block <site>        Block a website
+    unblock <site>      Unblock a website
+    list                List blocked sites
+    status              Show current status
+    help                Show this help
+
+Examples:
+    sudo parental-controls enable
+    sudo parental-controls block facebook.com
+    parental-controls status
+EOF
+}
+
+init_config
+
+case "${1:-help}" in
+    enable)enable_controls "$@";;
+    disable)disable_controls "$@";;
+    block)block_website "$2";;
+    list)list_blocked;;
+    status)show_status;;
+    *)show_help;;
+esac

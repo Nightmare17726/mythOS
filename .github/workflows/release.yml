@@ -1,0 +1,178 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+
+jobs:
+  build-all-editions:
+    name: Build All Editions for Release
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        edition: [chase, pegasus, nekomata, hydra, dragon]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gcc g++ make patch perl python3 python3-pip \
+            wget rsync cpio unzip bc flex bison \
+            libncurses5-dev libssl-dev device-tree-compiler \
+            genisoimage syslinux isolinux \
+            parted dosfstools mtools \
+            imagemagick optipng
+
+      - name: Cache Buildroot downloads
+        uses: actions/cache@v3
+        with:
+          path: |
+            build-system/buildroot/dl
+            buildroot-*.tar.gz
+          key: ${{ runner.os }}-buildroot-2024.02-${{ matrix.edition }}
+
+      - name: Generate placeholder mascots
+        run: |
+          cd build-system/scripts
+          ./generate-placeholder-mascots.sh <<< "n"
+
+      - name: Build ${{ matrix.edition }} Edition
+        run: |
+          cd build-system/scripts
+          ./build-mythos-${{ matrix.edition }}.sh --non-interactive
+        timeout-minutes: 360
+
+      - name: Create release notes
+        run: |
+          cat > build-system/output/RELEASE_NOTES_${{ matrix.edition }}.md << 'EOF'
+          # mythOS ${{ matrix.edition }} Edition
+
+          **Version:** ${{ github.ref_name || github.event.inputs.version }}
+          **Built:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Edition:** ${{ matrix.edition }}
+
+          ## Download
+
+          - ISO: `mythOS-${{ matrix.edition }}-${{ github.ref_name || github.event.inputs.version }}.iso`
+          - SHA256: `mythOS-${{ matrix.edition }}-${{ github.ref_name || github.event.inputs.version }}.iso.sha256`
+          - MD5: `mythOS-${{ matrix.edition }}-${{ github.ref_name || github.event.inputs.version }}.iso.md5`
+
+          ## Installation
+
+          1. Download the ISO
+          2. Verify checksum: `sha256sum -c *.sha256`
+          3. Write to USB: `sudo dd if=mythOS-*.iso of=/dev/sdX bs=4M status=progress`
+          4. Boot from USB
+          5. Run installer: `sudo mythos-installer`
+
+          ## What's Included
+
+          See [COMPLETE_BUILD_GUIDE.md](https://github.com/Nightmare17726/mythOS/blob/main/COMPLETE_BUILD_GUIDE.md) for full details.
+
+          ## Support
+
+          - Issues: https://github.com/Nightmare17726/mythOS/issues
+          - Discussions: https://github.com/Nightmare17726/mythOS/discussions
+          EOF
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-${{ matrix.edition }}
+          path: |
+            build-system/output/mythOS-${{ matrix.edition }}-*.iso
+            build-system/output/mythOS-${{ matrix.edition }}-*.iso.sha256
+            build-system/output/mythOS-${{ matrix.edition }}-*.iso.md5
+            build-system/output/RELEASE_NOTES_${{ matrix.edition }}.md
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-all-editions
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: release-artifacts
+
+      - name: Create release body
+        run: |
+          cat > RELEASE_BODY.md << 'EOF'
+          # mythOS Release ${{ github.ref_name || github.event.inputs.version }}
+
+          A lightweight Linux distribution designed for old hardware, especially the WebDT 366 tablet.
+
+          ## 🎨 Available Editions
+
+          - **Chase** (50MB) - Minimal terminal-only edition
+          - **Pegasus** (85MB) - Simple GUI for elderly users
+          - **Nekomata** (120MB) - Professional productivity
+          - **Hydra** (150MB) - Educational multi-disciplinary
+          - **Dragon** (250MB) - Gaming and entertainment
+
+          ## 📥 Downloads
+
+          Choose your edition below. Each includes:
+          - Bootable ISO image
+          - SHA256 and MD5 checksums for verification
+          - Release notes
+
+          ## 🚀 Quick Start
+
+          1. Download your preferred edition
+          2. Verify integrity: `sha256sum -c *.sha256`
+          3. Write to USB: `dd if=mythOS-*.iso of=/dev/sdX bs=4M`
+          4. Boot and enjoy!
+
+          ## 📚 Documentation
+
+          - [Complete Build Guide](https://github.com/Nightmare17726/mythOS/blob/main/COMPLETE_BUILD_GUIDE.md)
+          - [Getting Started](https://github.com/Nightmare17726/mythOS/blob/main/GETTING_STARTED.md)
+          - [Project Website](https://nightmare17726.github.io/mythOS/)
+
+          ## 🐛 Known Issues
+
+          See the [issue tracker](https://github.com/Nightmare17726/mythOS/issues) for known issues.
+
+          ## ✨ What's New
+
+          See individual edition release notes for details.
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name || github.event.inputs.version }}
+          name: mythOS ${{ github.ref_name || github.event.inputs.version }}
+          body_path: RELEASE_BODY.md
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/**/*.iso
+            release-artifacts/**/*.sha256
+            release-artifacts/**/*.md5
+            release-artifacts/**/RELEASE_NOTES_*.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update website downloads
+        run: |
+          echo "Release created! Update website downloads page."
+          # This would trigger website update if needed

@@ -1,0 +1,97 @@
+#!/bin/bash
+# mythOS Development Tools
+# Quick access to dev utilities
+
+show_menu(){
+    clear
+    cat<<'EOF'
+╔══════════════════════════════════════════════╗
+║       mythOS Development Tools               ║
+╚══════════════════════════════════════════════╝
+
+1. System Information
+2. Hardware Detection
+3. Package Development
+4. Kernel Modules
+5. Network Diagnostic
+6. Performance Profile
+7. Log Viewer
+8. Debug Shell
+9. Exit
+
+EOF
+    read -p "Select [1-9]: " choice
+}
+
+sys_info(){
+    echo "=== System Information ==="
+    uname -a
+    cat /etc/mythos-release 2>/dev/null
+    echo "RAM: $(free -h|awk '/^Mem:/ {print $2}')"
+    echo "Disk: $(df -h /|awk 'NR==2 {print $2}')"
+}
+
+hw_detect(){
+    echo "=== Hardware Detection ==="
+    lspci -nn
+    echo ""
+    lsusb
+}
+
+pkg_dev(){
+    echo "=== Package Development ==="
+    echo "Creating package template..."
+    mkdir -p /tmp/myth-pkg-template/{bin,lib,share/doc}
+    cat>/tmp/myth-pkg-template/post-install.sh<<'SCRIPT'
+#!/bin/bash
+# Post-installation script
+echo "Package installed!"
+SCRIPT
+    chmod +x /tmp/myth-pkg-template/post-install.sh
+    echo "Template created at: /tmp/myth-pkg-template"
+}
+
+kernel_modules(){
+    echo "=== Loaded Kernel Modules ==="
+    lsmod | head -20
+}
+
+net_diag(){
+    echo "=== Network Diagnostic ==="
+    ip addr
+    echo ""
+    ip route
+}
+
+perf_profile(){
+    echo "=== Performance Profile ==="
+    echo "CPU: $(nproc) cores"
+    echo "Load: $(uptime | awk -F'load average:' '{print $2}')"
+    top -bn1 | head -15
+}
+
+log_viewer(){
+    echo "=== Recent Logs ==="
+    dmesg | tail -30
+}
+
+debug_shell(){
+    echo "=== Debug Shell ==="
+    echo "Type 'exit' to return"
+    /bin/bash
+}
+
+while true; do
+    show_menu
+    case $choice in
+        1) sys_info; read -p "Press Enter...";;
+        2) hw_detect; read -p "Press Enter...";;
+        3) pkg_dev; read -p "Press Enter...";;
+        4) kernel_modules; read -p "Press Enter...";;
+        5) net_diag; read -p "Press Enter...";;
+        6) perf_profile; read -p "Press Enter...";;
+        7) log_viewer; read -p "Press Enter...";;
+        8) debug_shell;;
+        9) exit 0;;
+    esac
+done
